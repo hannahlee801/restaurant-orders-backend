@@ -1,0 +1,6 @@
+alembic
+fastapi
+sqlmodel
+uvicorn
+python-decouple
+psycopg2
