@@ -23,9 +23,10 @@ class Customer(SQLModel, table=True):
 
 class OrderItem(SQLModel, table=True):
     item_id: int | None = Field(primary_key=True)
+    menu_item_id: int = Field(foreign_key="menuitem.id")
+    menu_item: MenuItem = Relationship()
+    quantity: int = 1
     order_id: int | None = Field(foreign_key="order.id")
-    name: str
-    price: str
     orders: list["Order"] = Relationship(back_populates="items", link_model=CustomerOrderLink)
 
 class Order(SQLModel, table=True):

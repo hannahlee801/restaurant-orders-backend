@@ -7,9 +7,10 @@ from alembic import context
 
 from decouple import config
 
+DATABASE_URL = config("DATABASE_URL")
+
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
-DATABASE_URL = config("DATABASE_URL")
 config = context.config
 config.set_main_option("sqlalchemy.url", DATABASE_URL)
 

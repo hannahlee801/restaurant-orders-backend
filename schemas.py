@@ -10,7 +10,7 @@ class CreateCustomerRequest(BaseModel):
 
 class CreateOrderItemRequest(BaseModel):
     total_item_quantity: int
-    item_id: int
+    menu_item_id: int
 
 class CreateOrderRequest(BaseModel):
     customer_id: int
@@ -19,7 +19,7 @@ class CreateOrderRequest(BaseModel):
 class UpdateItemRequest(BaseModel):
     name: str
     price: float
-    calories: float
+    calories: int
 
 class UpdateCustomerRequest(BaseModel):
     name: str
@@ -34,7 +34,7 @@ class GetCustomersOrderRequest(BaseModel):
     quantity: int
 
 class GetBestSellingItemRequest(BaseModel):
-    item_id: int
+    menu_item_id: int
     name: str
     quantity: int
 
