@@ -9,6 +9,13 @@ from schemas import CreateOrderRequest, CreateCustomerRequest, CreateMenuItemReq
 
 app = FastAPI()
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 ### GET ###
 
 @app.get("/menuitems")
@@ -63,12 +70,12 @@ async def get_orders(db: Session = Depends(get_db)) -> list[dict]:
         })
     return list(orders.values())
 
-# @app.get("/orders/{id}")
-# async def get_order(id: int, db: Session = Depends(get_db)) -> dict:
-#     statement = (
-#         select(Order, OrderItem, MenuItem, Customer)
-#         .join(OrderItem, OrderItem.order_id)
-#     )
+@app.get("/orders/{id}")
+async def get_order(id: int, db: Session = Depends(get_db)) -> dict:
+    statement = (
+        select(Order, OrderItem, MenuItem, Customer)
+        .join(OrderItem, OrderItem.order_id)
+    )
 
 ### POST ###
 
@@ -88,23 +95,23 @@ async def create_customer(create_customer_request: CreateCustomerRequest, db: Se
     db.refresh(customer)
     return customer
 
-# @app.post("/orders", status_code=status.HTTP_201_CREATED)
-# async def create_order(create_order_request: CreateOrderRequest, db: Session = Depends(get_db)) -> None:
-#     items: list[OrderItem] = []
-#     for item in create_order_request.items:
-#         menu_item: MenuItem | None = db.get(MenuItem, item.item_id)
-#         if menu_item is None:
-#             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Item with ID {item.item_id} not found.")
-#         order_item: OrderItem = OrderItem(menu_item_id=item.item_id, quantity=item.total_item_quantity)
-#         items.append(order_item)
-#     customer: Customer | None = db.get(Customer, create_order_request.customer_id)
-#     if customer is None:
-#         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Customer with ID {create_order_request.customer_id} not found.")
-#     order: Order = Order(**create_order_request.model_dump())
-#     db.add(order)
-#     db.commit()
-#     db.refresh(order)
-#     return order.id
+@app.post("/orders", status_code=status.HTTP_201_CREATED)
+async def create_order(create_order_request: CreateOrderRequest, db: Session = Depends(get_db)) -> None:
+    items: list[OrderItem] = []
+    for item in create_order_request.items:
+        menu_item: MenuItem | None = db.get(MenuItem, item.item_id)
+        if menu_item is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Item with ID {item.item_id} not found.")
+        order_item: OrderItem = OrderItem(menu_item_id=item.item_id, quantity=item.total_item_quantity)
+        items.append(order_item)
+    customer: Customer | None = db.get(Customer, create_order_request.customer_id)
+    if customer is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Customer with ID {create_order_request.customer_id} not found.")
+    order: Order = Order(**create_order_request.model_dump())
+    db.add(order)
+    db.commit()
+    db.refresh(order)
+    return order.id
 
 ### PATCH ###
 
@@ -152,23 +159,23 @@ async def delete_menu_item(item_id: int, db: Session = Depends(get_db)) -> None:
 
 ### REPORTS ###
 
-# @app.get("/reports/best-selling")
-# async def get_best_selling_item(db: Session = Depends(get_db)) -> GetBestSellingItemRequest:
-#     statement = (
-#         select(MenuItem.id, MenuItem.name, func.sum(OrderItem.quantity)).join(OrderItem, OrderItem.item_id == MenuItem.id).group_by(MenuItem.id, MenuItem.name).order_by(func.sum(OrderItem.quantity).desc()).limit(1)
-#     )
-#     response= db.exec(statement).all()
-#     if not response:
-#         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Best selling item not found.")
-#     return GetBestSellingItemRequest(item_id=response[0], name=response[1], quantity=response[2])
+@app.get("/reports/best-selling")
+async def get_best_selling_item(db: Session = Depends(get_db)) -> GetBestSellingItemRequest:
+    statement = (
+        select(MenuItem.id, MenuItem.name, func.sum(OrderItem.quantity)).join(OrderItem, OrderItem.item_id == MenuItem.id).group_by(MenuItem.id, MenuItem.name).order_by(func.sum(OrderItem.quantity).desc()).limit(1)
+    )
+    response= db.exec(statement).all()
+    if not response:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Best selling item not found.")
+    return GetBestSellingItemRequest(item_id=response[0], name=response[1], quantity=response[2])
 
-# @app.get("/reports/customer-orders")
-# async def get_customer_orders(customer_id: int, db: Session = Depends(get_db)) -> GetCustomersOrderRequest:
-#     statement= (
-#         select(Customer.id, Customer.name, func.coalesce(func.sum(OrderItem.quantity), 0)).select_from(Customer).outerjoin(Order, Order.customer_id == Customer.id).outerjoin(OrderItem, OrderItem.order_id == Order.id).where(Customer.id == customer_id).group_by(Customer.id, Customer.name)
-#     )
-#     response= db.exec(statement).first()
+@app.get("/reports/customer-orders")
+async def get_customer_orders(customer_id: int, db: Session = Depends(get_db)) -> GetCustomersOrderRequest:
+    statement= (
+        select(Customer.id, Customer.name, func.coalesce(func.sum(OrderItem.quantity), 0)).select_from(Customer).outerjoin(Order, Order.customer_id == Customer.id).outerjoin(OrderItem, OrderItem.order_id == Order.id).where(Customer.id == customer_id).group_by(Customer.id, Customer.name)
+    )
+    response= db.exec(statement).first()
 
-#     if not response:
-#         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Customer with id {customer_id} not found.")
-#     return GetCustomersOrderRequest(customer_id=response[0], name=response[1], quantity=response[2])
+    if not response:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Customer with id {customer_id} not found.")
+    return GetCustomersOrderRequest(customer_id=response[0], name=response[1], quantity=response[2])
